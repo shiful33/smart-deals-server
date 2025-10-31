@@ -32,6 +32,9 @@ async function run() {
     const productsCollection = database.collection('products');
 
     app.get('/products', async(req, res) => {
+      /* const projectFields = { title: 1, price_min: 1, price_max: 1, image: 1 }
+      const cursor = productsCollection.find().sort({ price_min: -1 }).limit(5).project(projectFields); */
+
       const cursor = productsCollection.find();
       const result = await cursor.toArray();
       res.send(result);
