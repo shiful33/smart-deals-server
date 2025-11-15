@@ -1,5 +1,3 @@
-// server/index.js (FINAL FIX: Replaced verifyFireBaseToken with verifyToken)
-
 const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
@@ -8,10 +6,14 @@ const admin = require("firebase-admin");
 
 // --- Firebase Admin Initialization ---
 try {
-  const serviceAccount = require("./smart-deals-firebase-adminsdk.json");
+
+const decoded = Buffer.from(process.env.FIREBASE_SERVICE_KEY, "base64").toString("utf8");
+const serviceAccount = JSON.parse(decoded);
+  
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
   });
+
 } catch (e) {
   console.error(
     "❌ CRITICAL: Could not initialize Firebase Admin. Check service account file path and content."
@@ -22,7 +24,6 @@ try {
 const app = express();
 const port = process.env.PORT || 5000;
 
-// CORS FIX: Allowing both potential frontend ports (5173 and 5174)
 app.use(
   cors({
     origin: ["http://localhost:5173", "http://localhost:5174"],
@@ -32,7 +33,6 @@ app.use(
 app.use(express.json());
 
 // --- Token Verify Middleware ---
-// CRITICAL: This consolidated function is the ONLY token checker used.
 const verifyToken = async (req, res, next) => {
   const authorization = req.headers.authorization;
 
@@ -51,7 +51,6 @@ const verifyToken = async (req, res, next) => {
 
   try {
     const decoded = await admin.auth().verifyIdToken(token);
-    // Attach the entire decoded user object to req.user for easy access
     req.user = decoded;
 
     next();
@@ -179,7 +178,6 @@ async function run() {
       }
     });
 
-    // GET Bids by Buyer Email (Protected Route - User's private bids)
     app.get("/bids", verifyToken, async (req, res) => {
       const { buyer_email } = req.query;
       const query = {};
