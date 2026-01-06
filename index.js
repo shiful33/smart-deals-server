@@ -6,14 +6,15 @@ const admin = require("firebase-admin");
 
 // --- Firebase Admin Initialization ---
 try {
+  const decoded = Buffer.from(
+    process.env.FIREBASE_SERVICE_KEY,
+    "base64"
+  ).toString("utf8");
+  const serviceAccount = JSON.parse(decoded);
 
-const decoded = Buffer.from(process.env.FIREBASE_SERVICE_KEY, "base64").toString("utf8");
-const serviceAccount = JSON.parse(decoded);
-  
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
   });
-
 } catch (e) {
   console.error(
     "❌ CRITICAL: Could not initialize Firebase Admin. Check service account file path and content."
@@ -31,6 +32,13 @@ app.use(
   })
 );
 app.use(express.json());
+
+app.use(
+  cors({
+    origin: "*",
+    credentials: true,
+  })
+);
 
 // --- Token Verify Middleware ---
 const verifyToken = async (req, res, next) => {
@@ -63,7 +71,7 @@ const verifyToken = async (req, res, next) => {
 };
 
 // --- MongoDB Setup ---
-const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@ahmedtpro.4kxy1cz.mongodb.net/?retryWrites=true&w=majority`;
+const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@ahmedtpro.4kxy1cz.mongodb.net/SmartDeals?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, {
   serverApi: ServerApiVersion.v1,
   serverSelectionTimeoutMS: 15000,
@@ -111,14 +119,15 @@ async function run() {
     // GET Latest Products (Sorted by descending time: 1)
     app.get("/latest-products", async (req, res) => {
       try {
-        const result = await products
+        const db = client.db("SmartDeals");
+        const result = await db
+          .collection("products")
           .find()
-          .sort({ created_at: 1 })
           .limit(6)
           .toArray();
         res.send(result);
-      } catch (e) {
-        res.status(500).send({ error: "Failed to fetch latest products" });
+      } catch (error) {
+        res.status(500).send({ message: error.message });
       }
     });
 
@@ -251,3 +260,5 @@ run();
 app.listen(port, () =>
   console.log(`🚀 Server listening at http://localhost:${port}`)
 );
+
+module.exports = app;
