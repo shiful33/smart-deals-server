@@ -27,9 +27,12 @@ const port = process.env.PORT || 5000;
 
 app.use(
   cors({
-    origin: ["http://localhost:5173", "https://your-frontend-domain.vercel.app"],
+    origin: [
+      "http://localhost:5173",
+      "https://your-frontend-domain.vercel.app",
+    ],
     credentials: true,
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   })
 );
 app.use(express.json());
@@ -160,19 +163,14 @@ async function run() {
     });
 
     app.get("/products/:id", async (req, res) => {
-      const { id } = req.params;
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await products.findOne(query);
 
-      try {
-        // If your _id in DB is string
-        const product = await products.findOne({ _id: id });
-
-        if (!product)
-          return res.status(404).json({ message: "Product not found" });
-
-        res.json(product);
-      } catch (err) {
-        console.error("Error fetching product by ID:", err);
-        res.status(500).json({ message: "Server error" });
+      if (result) {
+        res.send(result);
+      } else {
+        res.status(404).send({ message: "Product not found" });
       }
     });
 
