@@ -162,17 +162,27 @@ async function run() {
       }
     });
 
-    app.get("/products/:id", async (req, res) => {
-      const id = req.params.id;
-      const query = { _id: new ObjectId(id) };
-      const result = await products.findOne(query);
+    const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 
-      if (result) {
-        res.send(result);
-      } else {
-        res.status(404).send({ message: "Product not found" });
-      }
-    });
+app.get("/products/:id", async (req, res) => {
+  try {
+    const id = req.params.id;
+    if (!ObjectId.isValid(id)) {
+        return res.status(400).send({ message: "Invalid ID format" });
+    }
+    
+    const query = { _id: new ObjectId(id) };
+    const result = await products.findOne(query);
+
+    if (result) {
+      res.send(result);
+    } else {
+      res.status(404).send({ message: "Product not found in Database" });
+    }
+  } catch (error) {
+    res.status(500).send({ message: "Server Error", error: error.message });
+  }
+});
 
     // POST a New Product
     app.post("/products", async (req, res) => {
