@@ -162,27 +162,23 @@ async function run() {
       }
     });
 
-    const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+    // const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 
-app.get("/products/:id", async (req, res) => {
-  try {
-    const id = req.params.id;
-    if (!ObjectId.isValid(id)) {
-        return res.status(400).send({ message: "Invalid ID format" });
-    }
-    
-    const query = { _id: new ObjectId(id) };
-    const result = await products.findOne(query);
+    app.get("/products/:id", async (req, res) => {
+      try {
+        const id = req.params.id;
+        const query = { _id: new ObjectId(id) };
+        const db = client.db("SmartDeals");
+        const result = await db.collection("products").findOne(query);
 
-    if (result) {
-      res.send(result);
-    } else {
-      res.status(404).send({ message: "Product not found in Database" });
-    }
-  } catch (error) {
-    res.status(500).send({ message: "Server Error", error: error.message });
-  }
-});
+        if (!result) {
+          return res.status(404).send({ message: "Product not found" });
+        }
+        res.send(result);
+      } catch (error) {
+        res.status(500).send({ message: "Invalid ID format or Server Error" });
+      }
+    });
 
     // POST a New Product
     app.post("/products", async (req, res) => {
