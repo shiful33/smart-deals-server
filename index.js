@@ -29,7 +29,7 @@ app.use(
   cors({
     origin: [
       "http://localhost:5173",
-      "https://your-frontend-domain.vercel.app",
+      "https://smart-deals-api-server-flax.vercel.app",
     ],
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
@@ -90,7 +90,7 @@ async function run() {
     await client.connect();
     console.log("✅ MongoDB Connected Successfully!");
 
-    const db = client.db("SmartDeals");
+    const productCollection = client.db("SmartDeals").collection("products");
     const products = db.collection("products");
     const bids = db.collection("bids");
     const users = db.collection("users");
@@ -122,18 +122,13 @@ async function run() {
 
     // GET Latest Products (Sorted by descending time: 1)
     app.get("/latest-products", async (req, res) => {
-      try {
-        const db = client.db("SmartDeals");
-        const result = await db
-          .collection("products")
-          .find()
-          .limit(6)
-          .toArray();
+    try {
+        const result = await productCollection.find().limit(6).toArray();
         res.send(result);
-      } catch (error) {
+    } catch (error) {
         res.status(500).send({ message: error.message });
-      }
-    });
+    }
+});
 
     // GET All Products (Sorted by descending time: 1)
     app.get("/all-products", async (req, res) => {
@@ -165,20 +160,12 @@ async function run() {
     // const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 
     app.get("/products/:id", async (req, res) => {
-      try {
-        const id = req.params.id;
-        const query = { _id: new ObjectId(id) };
-        const db = client.db("SmartDeals");
-        const result = await db.collection("products").findOne(query);
-
-        if (!result) {
-          return res.status(404).send({ message: "Product not found" });
-        }
-        res.send(result);
-      } catch (error) {
-        res.status(500).send({ message: "Invalid ID format or Server Error" });
-      }
-    });
+    const id = req.params.id;
+    const query = { _id: new ObjectId(id) };
+    const result = await productCollection.findOne(query);
+    if (!result) return res.status(404).send({ message: "Not Found" });
+    res.send(result);
+});
 
     // POST a New Product
     app.post("/products", async (req, res) => {
